@@ -73,6 +73,18 @@ export async function readProfiles(urls: string[]): Promise<Map<string, Profile>
 /** The positions held now (no end date). */
 export const currentPositions = (p: Profile): Position[] => p.experience.filter((x) => !x.endDate || x.endDate.text === "Present" || (!x.endDate.year && !x.endDate.month))
 
-/** A Google query for LinkedIn profiles at a company with any of the titles, in the Netherlands. */
-export const profileQuery = (company: string, titles: string[], extra = "Netherlands"): string =>
-  `site:linkedin.com/in "${company.replace(/"/g, "")}" (${titles.map((t) => `"${t.replace(/"/g, "")}"`).join(" OR ")}) ${extra}`.trim()
+/** A company name as people write it on LinkedIn: legal forms and "Bank N.V." style tails removed ("ABN AMRO Bank N.V." -> "ABN AMRO"). */
+export const shortName = (company: string): string =>
+  company.replace(/&amp;/g, "&").replace(/\b(b\.?v\.?|n\.?v\.?|gmbh|ltd|llc|inc|plc|ag|se|sa|holding|holdings|group|nederland|netherlands|bank)\b\.?/gi, " ").replace(/[()"]/g, " ").replace(/\s+/g, " ").trim() || company
+
+/**
+ * Google queries for LinkedIn profiles at a company with any of the titles, in the Netherlands. Long OR lists make Google return little
+ * or nothing (Philips finance: 8 phrases -> 0 profiles, Danone: 10), so the titles go in queries of at most `per` phrases each.
+ */
+export function profileQueries(company: string, titles: string[], extra = "Netherlands", per = 3): string[] {
+  const name = shortName(company), out: string[] = []
+  const list = [...new Set(titles.map((t) => t.replace(/"/g, "").trim()).filter(Boolean))]
+  for (let i = 0; i < list.length; i += per) out.push(`site:linkedin.com/in "${name}" (${list.slice(i, i + per).map((t) => `"${t}"`).join(" OR ")}) ${extra}`.trim())
+  return out
+}
+export const profileQuery = (company: string, titles: string[], extra = "Netherlands"): string => profileQueries(company, titles, extra, 99)[0]

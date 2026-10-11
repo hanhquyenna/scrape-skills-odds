@@ -17,7 +17,7 @@
  */
 import { readFileSync } from "node:fs"
 import { ApifyUnavailable, apifyReady } from "../../../lib/apify"
-import { currentPositions, discover, profileQuery, readProfiles, type Profile } from "../../../lib/people"
+import { currentPositions, discover, profileQueries, readProfiles, type Profile } from "../../../lib/people"
 import { jsonb, lit, sql } from "../../../lib/db"
 import { arg, flag } from "../../../lib/env"
 import { DEPARTMENT_TITLES, MANAGER, RECRUITER, SENIOR, adjacentDepartments, departmentKey, departmentOf, inNL, loadPages, pageOf, sameCompany } from "../../../lib/rules"
@@ -99,14 +99,18 @@ if (!LINK_ONLY) {
         const batch = todo.slice(b, b + BATCH).map((pair) => ({ pair, page: pageOf(pair.employer, pair.display) }))
         for (const x of batch) if (!x.page) console.log(`- ${x.pair.display}: no LinkedIn company page known (run odds-company-info first), skipped`)
         const runRound = async (wanted: Array<{ pair: (typeof todo)[0]; page: string; role: Role; dep: string | null }>): Promise<Map<string, Person[]>> => {
-          const qs = wanted.map((w) => profileQuery(w.pair.display, titlesFor(w.role, w.dep)))
-          const found = await discover(qs)
-          const urls = new Set<string>()
-          qs.forEach((q) => (found.get(q) ?? []).slice(0, READ).forEach((r) => urls.add(r.url)))
-          const profiles = await readProfiles([...urls])
+          const qsOf = wanted.map((w) => profileQueries(w.pair.display, titlesFor(w.role, w.dep), "Netherlands", 3))
+          const found = await discover([...new Set(qsOf.flat())])
+          // The results of one search's queries are merged (first results of each query first), then the top READ are read in full.
+          const topOf = (qs: string[]): string[] => {
+            const lists = qs.map((q) => (found.get(q) ?? []).map((r) => r.url)), merged: string[] = []
+            for (let k = 0; merged.length < READ && k < 10; k++) for (const l of lists) if (l[k] && !merged.includes(l[k]) && merged.length < READ) merged.push(l[k])
+            return merged
+          }
+          const profiles = await readProfiles([...new Set(qsOf.flatMap(topOf))])
           const out = new Map<string, Person[]>()
           wanted.forEach((w, i) => {
-            const people = (found.get(qs[i]) ?? []).slice(0, READ).map((r) => profiles.get(r.url)).filter((p): p is Profile => Boolean(p)).map((p) => toPerson(p, w.pair.employer, w.pair.display, w.page))
+            const people = topOf(qsOf[i]).map((u) => profiles.get(u)).filter((p): p is Profile => Boolean(p)).map((p) => toPerson(p, w.pair.employer, w.pair.display, w.page))
             out.set(`${w.pair.employer}|${w.pair.family}|${w.role}|${w.dep}`, people.filter((p) => !fits(p, w.role)))
           })
           return out

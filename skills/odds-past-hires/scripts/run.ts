@@ -13,7 +13,7 @@
  */
 import { readFileSync } from "node:fs"
 import { ApifyUnavailable, apifyReady, datasetItems, lastDataset, lastInput } from "../../../lib/apify"
-import { discover, profileQuery, readProfiles } from "../../../lib/people"
+import { discover, profileQueries, readProfiles } from "../../../lib/people"
 import { jsonb, lit, sql } from "../../../lib/db"
 import { arg, flag } from "../../../lib/env"
 import { DEPARTMENT_TITLES, LEVEL_WORDS, adjacentDepartments, departmentKey, loadPages, pageOf, sameCompany, titleOverlap, titleWords } from "../../../lib/rules"
@@ -141,14 +141,17 @@ try {
       const dep = departmentKey(j.family, j.title)
       const main = words || (dep ? (DEPARTMENT_TITLES[dep] ?? [])[0] : "")
       const titles = j.level === "Internship" ? [`${main} intern`, `${main} internship`, `${main} stagiair`, `${main} trainee`] : [`junior ${main}`, `${main} graduate`, `${main} associate`, `${main} trainee`]
-      return { group, j, page, query: main ? profileQuery(j.display, titles, "") : "" }
-    }).filter((x) => x.query)
-    const found = await discover(batch.map((x) => x.query))
-    const urls = new Set<string>()
-    batch.forEach((x) => (found.get(x.query) ?? []).slice(0, READ).forEach((r) => urls.add(r.url)))
-    const profiles = await readProfiles([...urls])
+      return { group, j, page, queries: main ? profileQueries(j.display, titles, "", 2) : [] }
+    }).filter((x) => x.queries.length)
+    const found = await discover([...new Set(batch.flatMap((x) => x.queries))])
+    const topOf = (qs: string[]): string[] => {
+      const lists = qs.map((q) => (found.get(q) ?? []).map((r) => r.url)), merged: string[] = []
+      for (let k = 0; merged.length < READ && k < 10; k++) for (const l of lists) if (l[k] && !merged.includes(l[k]) && merged.length < READ) merged.push(l[k])
+      return merged
+    }
+    const profiles = await readProfiles([...new Set(batch.flatMap((x) => topOf(x.queries)))])
     for (const x of batch) {
-      const people = (found.get(x.query) ?? []).slice(0, READ).map((r) => profiles.get(r.url)).filter(Boolean) as unknown as Array<Record<string, any>>
+      const people = topOf(x.queries).map((u) => profiles.get(u)).filter(Boolean) as unknown as Array<Record<string, any>>
       searched++
       const here = await handle(people, x.group, x.page)
       if (here) covered += x.group.length
