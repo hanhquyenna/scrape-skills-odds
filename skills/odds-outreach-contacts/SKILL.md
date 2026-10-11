@@ -13,13 +13,14 @@ Fills:
   department is not the job's).
 
 Order of the search for each employer and department (newest jobs first):
-1. **Hiring managers**: the department's titles (lib/rules.ts `DEPARTMENT_TITLES`) at LinkedIn seniority Manager / Experienced manager /
-   Director (200, 210, 220).
-2. **Same department, not senior**: the same titles at In training / Entry (100, 110); anyone whose title says senior, lead, manager… is left out.
-3. **Adjacent departments**: when 1 or 2 found nobody, the same searches in the two nearest departments (`adjacentDepartments`).
+1. **Hiring managers**: Google `site:linkedin.com/in "<company>" ("<dept word> manager" OR "head of <dept word>" OR "<dept word> lead" OR "<dept word> director") Netherlands`.
+2. **Same department, not senior**: the department words (plus junior / associate / specialist); anyone whose current title says senior, lead, manager… is left out.
+3. **Adjacent departments**: when 1 or 2 found nobody, the same search in the nearest department (`adjacentDepartments`).
 4. **Recruiters**: once per employer (recruiter, talent acquisition, HR business partner, early careers, campus, people partner).
 
-Kept only by fixed rules: current position at this employer (name or LinkedIn page), in the Netherlands, title fits the role.
+The top results of each query (`--read 6`) are read in full and kept only by fixed rules: a current position (no end date) at this employer
+(name or LinkedIn page), in the Netherlands, and that position's title fits the role. Queries and profiles go in batches (`--batch 8`).
+Do not use `harvestapi/linkedin-profile-search`: free accounts get 10 runs, then it returns nothing.
 Then `odds-typesafe-cluster --people` checks each person again (NL, works there, department, seniority).
 
 ## 0. Before running
@@ -27,7 +28,7 @@ Then `odds-typesafe-cluster --people` checks each person again (NL, works there,
 1. Repo root, odds repo next to it. Employers need a LinkedIn company page: run `odds-company-info` step 2 first for new employers.
 2. **Ask the user for their Apify API token**; pass `APIFY_TOKEN=...` on the command line only.
 
-## 1. Run (Apify `harvestapi/linkedin-profile-search`, Short mode, ~$0.05 per search of 25 people, 2–5 searches per pair)
+## 1. Run (Apify: Google `apify/google-search-scraper` finds people, `supreme_coder/linkedin-profile-scraper` reads their profiles; ~$0.055 per pair)
 
 ```bash
 bun skills/odds-outreach-contacts/scripts/run.ts --dry                    # the employer-and-department pairs, newest first

@@ -1,18 +1,19 @@
 /**
  * People who held this job, or one next to it, at this employer before ("successful historical candidates"), for the jobs in scope,
- * newest first. Stored in candidate_profiles, candidate_experience, candidate_education and job_candidate_evidence, which the odds app
+ * newest first. Found with Google and read with supreme_coder/linkedin-profile-scraper (lib/people.ts). Stored in candidate_profiles, candidate_experience, candidate_education and job_candidate_evidence, which the odds app
  * reads (job_successful_candidates). Every match says which role the person held and how it relates to the job:
  *   exact     same employer, same level, the job's title words (>= 60%)
  *   adjacent  same employer, same level, and either some of the title words or a role in the same or a neighbouring department;
  *             the held role and its department are stated (explanation, relevant_history)
  *
- *   bun skills/odds-past-hires/scripts/run.ts [--days 30] [--limit 50] [--dry]     Apify harvestapi/linkedin-profile-search (Full mode)
- *   bun skills/odds-past-hires/scripts/run.ts --reuse-last [--limit 1]             the actor's last run again (already paid for)
+ *   bun skills/odds-past-hires/scripts/run.ts [--days 30] [--limit 50] [--dry]     Google (apify/google-search-scraper) + supreme_coder/linkedin-profile-scraper
+ *   bun skills/odds-past-hires/scripts/run.ts --reuse-last     an earlier harvestapi/linkedin-profile-search run again (already paid for)
  *   bun skills/odds-past-hires/scripts/run.ts --from-file profiles.json            collected in the browser (shape in SKILL.md)
  * --limit counts searches (one per employer, title words and level). Jobs with validated evidence already are skipped.
  */
 import { readFileSync } from "node:fs"
-import { ApifyUnavailable, apifyReady, datasetItems, lastDataset, lastInput, runActor } from "../../../lib/apify"
+import { ApifyUnavailable, apifyReady, datasetItems, lastDataset, lastInput } from "../../../lib/apify"
+import { discover, profileQuery, readProfiles } from "../../../lib/people"
 import { jsonb, lit, sql } from "../../../lib/db"
 import { arg, flag } from "../../../lib/env"
 import { DEPARTMENT_TITLES, LEVEL_WORDS, adjacentDepartments, departmentKey, loadPages, pageOf, sameCompany, titleOverlap, titleWords } from "../../../lib/rules"
@@ -128,21 +129,32 @@ if (REUSE) {
   console.log(`reused the last search (${page}): ${here} matches for ${group.length} jobs`)
   process.exit(0)
 }
+// Google finds people who name this employer and a title like the job's (apify/google-search-scraper); their whole profiles are read
+// (supreme_coder/linkedin-profile-scraper); the fixed rules above decide. Searches go in batches of BATCH.
+const BATCH = Number(arg("--batch", "10")), READ = Number(arg("--read", "6"))
 try {
-  for (const [, group] of groups) {
-    if (searched >= LIMIT) break
-    const j = group[0], page = pageOf(j.employer, j.display)
-    if (!page) { console.log(`- ${j.display}: no LinkedIn company page (run odds-company-info first), skipped`); continue }
-    const words = titleWords(j.title).slice(0, 3).join(" ")
-    const lvl = j.level === "Internship" ? "intern" : "junior"
-    const dep = departmentKey(j.family, j.title)
-    const titles = [...new Set([words && `${words} ${lvl}`, words && `${lvl} ${words}`, dep && `${(DEPARTMENT_TITLES[dep] ?? [])[0]} ${lvl}`].filter(Boolean) as string[])]
-    const people = (await runActor("harvestapi/linkedin-profile-search", { pastCompanies: [page], pastJobTitles: titles, maxItems: 15, takePages: 1, profileScraperMode: "Full" }, { quiet: true })).items as Array<Record<string, any>>
-    searched++
-    const here = await handle(people, group, page)
-    if (here) covered += group.length
-    kept += here
-    console.log(`- ${j.day} ${j.display} "${titles.join(" | ")}" (${group.length} jobs): ${people.length} found, ${here} matches`)
+  const todo = [...groups.values()].slice(0, LIMIT)
+  for (let b = 0; b < todo.length; b += BATCH) {
+    const batch = todo.slice(b, b + BATCH).map((group) => {
+      const j = group[0], page = pageOf(j.employer, j.display)
+      const words = titleWords(j.title).slice(0, 3).join(" ")
+      const dep = departmentKey(j.family, j.title)
+      const main = words || (dep ? (DEPARTMENT_TITLES[dep] ?? [])[0] : "")
+      const titles = j.level === "Internship" ? [`${main} intern`, `${main} internship`, `${main} stagiair`, `${main} trainee`] : [`junior ${main}`, `${main} graduate`, `${main} associate`, `${main} trainee`]
+      return { group, j, page, query: main ? profileQuery(j.display, titles, "") : "" }
+    }).filter((x) => x.query)
+    const found = await discover(batch.map((x) => x.query))
+    const urls = new Set<string>()
+    batch.forEach((x) => (found.get(x.query) ?? []).slice(0, READ).forEach((r) => urls.add(r.url)))
+    const profiles = await readProfiles([...urls])
+    for (const x of batch) {
+      const people = (found.get(x.query) ?? []).slice(0, READ).map((r) => profiles.get(r.url)).filter(Boolean) as unknown as Array<Record<string, any>>
+      searched++
+      const here = await handle(people, x.group, x.page)
+      if (here) covered += x.group.length
+      kept += here
+      console.log(`- ${x.j.day} ${x.j.display} "${x.j.title.slice(0, 50)}" (${x.group.length} jobs): ${people.length} profiles read, ${here} matches`)
+    }
   }
 } catch (e) {
   if (e instanceof ApifyUnavailable) console.log(`APIFY UNAVAILABLE: ${e.message}\nStopped. Continue with the browser route in SKILL.md.`)

@@ -19,15 +19,20 @@ rewrites anything people read.
 | [odds-glassdoor-jobs](skills/odds-glassdoor-jobs/SKILL.md) | new jobs (postings) | `valig/glassdoor-jobs-scraper` | browser |
 | [odds-glassdoor-reviews](skills/odds-glassdoor-reviews/SKILL.md) | reviews per company, per role | `apify/google-search-scraper` + `kaix/glassdoor-reviews-scraper` | browser |
 | [odds-company-info](skills/odds-company-info/SKILL.md) | revenue, profit, net worth, growth, headcount, LinkedIn page | `harvestapi/linkedin-company` (+ Wikidata, free) | Wikidata + browser (company reports) |
-| [odds-outreach-contacts](skills/odds-outreach-contacts/SKILL.md) | hiring managers, same-department people, adjacent, recruiters | `harvestapi/linkedin-profile-search` (Short) | browser (LinkedIn, signed in) |
-| [odds-past-hires](skills/odds-past-hires/SKILL.md) | exact and adjacent past role holders | `harvestapi/linkedin-profile-search` (Full) | browser (LinkedIn, signed in) |
+| [odds-outreach-contacts](skills/odds-outreach-contacts/SKILL.md) | hiring managers, same-department people, adjacent, recruiters | `apify/google-search-scraper` + `supreme_coder/linkedin-profile-scraper` | browser (LinkedIn, signed in) |
+| [odds-past-hires](skills/odds-past-hires/SKILL.md) | exact and adjacent past role holders | `apify/google-search-scraper` + `supreme_coder/linkedin-profile-scraper` | browser (LinkedIn, signed in) |
 | [odds-typesafe-cluster](skills/odds-typesafe-cluster/SKILL.md) | checks people, past hires, duplicate jobs | - (TypeSafe) | - |
 
 ### Actors tested on the Apify free plan (11 Oct 2026)
 
 | Actor | Measured | Verdict |
 |---|---|---|
-| `harvestapi/linkedin-profile-search` | $0.05 per Short search (25 people); $0.10 per Full search (15 profiles with history) | used |
+| `harvestapi/linkedin-profile-search` | $0.05 per Short search; **free accounts are limited to 10 runs** (later runs succeed with no items; the log says "Free users are limited to 10 runs") | **not used** |
+| `supreme_coder/linkedin-profile-scraper` | $0.005 per profile (every position with dates, location, education); no run limit seen | used to read profiles |
+| `apify/google-search-scraper` with `site:linkedin.com/in "<company>" ("title" OR …)` | ~$0.004 per query (10 results) | used to find people |
+| `harvestapi/linkedin-profile-scraper` | $0.004 per profile | works, but same publisher as the 10-run actor: avoided |
+| `datadoping/linkedin-profile-scraper` | $0.004 per profile | works, alternative reader |
+| `memo23/linkedin-people-search`, `memo23/linkedin-company-employees-scraper` | $0.004–0.006 per person | Google-snippet data, titles often missing: not used |
 | `harvestapi/linkedin-company` | ~$0.004 per company (a one-company test shows only the start fee) | used |
 | `kaix/glassdoor-reviews-scraper` | fractions of a cent per review, 3 s | used (best) |
 | `apify/google-search-scraper` | ~$0.004 per query; refuses a cap below $0.50 | used to find Glassdoor pages |
@@ -40,7 +45,10 @@ rewrites anything people read.
 | `burbn/glassdoor-company-search` | $0.08 per company (4 starts) | not used |
 | `curious_coder/linkedin-jobs-scraper` | $0.018 per 10 jobs | not used |
 
-Rental actors (monthly price) need a paid Apify plan and are not used.
+Rental actors (monthly price) need a paid Apify plan and are not used. Actors that cap free accounts at a number of runs are not used either:
+`lib/apify.ts` reads the run log when a run returns nothing and stops with `APIFY UNAVAILABLE` when it says so.
+
+Measured cost per unit of work: outreach contacts ~$0.055 per employer-and-department pair; past hires ~$0.035 per search.
 
 ## Setup
 

@@ -55,9 +55,10 @@ export async function runActor<T = Record<string, any>>(actor: string, input: un
     if (page.length < 1000) break
   }
   if (!opts.quiet) console.log(`  apify ${actor}: ${run.status}, ${items.length} items, $${Number(run.usageTotalUsd ?? 0).toFixed(3)}`)
-  if (run.status !== "SUCCEEDED" && items.length === 0) {
+  if (items.length === 0) {
+    // Some actors cap free accounts ("Free users are limited to 10 runs") and still report SUCCEEDED with no items: read the log.
     const log = await (await api(`/actor-runs/${run.id}/log`)).text()
-    if (/free (users|plan)|limited to \d+ runs|upgrade|insufficient|credit/i.test(log)) throw new ApifyUnavailable(`${actor}: ${log.slice(-300)}`)
+    if (/free (users|plan)|limited to \d+ runs|run limit|upgrade to a paid|insufficient|hard limit|credit/i.test(log)) throw new ApifyUnavailable(`${actor}: ${(log.match(/.*(free|limit|upgrade|insufficient|credit).*/gi) ?? []).slice(-2).join(" | ").slice(0, 300)}`)
   }
   return { items, status: run.status, usd: Number(run.usageTotalUsd ?? 0), runId: run.id, datasetId: run.defaultDatasetId }
 }

@@ -4,6 +4,7 @@
  *   2. peers: everyone else in that department who is not senior (entry and in-training levels)
  *   3. adjacent: when 1 or 2 found nobody, the same two searches in the nearest departments (lib/rules.ts adjacentDepartments)
  *   4. recruiters: talent acquisition, HR, early careers (once per employer)
+ * Found with Google (apify/google-search-scraper) and read with supreme_coder/linkedin-profile-scraper (lib/people.ts).
  * Stored per employer in job_people (jev.role, jev.department), then linked to each job in job_outreach_contacts with a rank
  * (1 hiring manager, 2 peer, 3 adjacent manager, 4 adjacent peer, 5 recruiter).
  *
@@ -15,7 +16,8 @@
  * fits the role searched for.
  */
 import { readFileSync } from "node:fs"
-import { ApifyUnavailable, apifyReady, runActor } from "../../../lib/apify"
+import { ApifyUnavailable, apifyReady } from "../../../lib/apify"
+import { currentPositions, discover, profileQuery, readProfiles, type Profile } from "../../../lib/people"
 import { jsonb, lit, sql } from "../../../lib/db"
 import { arg, flag } from "../../../lib/env"
 import { DEPARTMENT_TITLES, MANAGER, RECRUITER, SENIOR, adjacentDepartments, departmentKey, departmentOf, inNL, loadPages, pageOf, sameCompany } from "../../../lib/rules"
@@ -33,7 +35,8 @@ function fits(p: Person, role: Role): string | null {
   if (!p.company) return "not at the company now"
   if (!inNL(p.place)) return "not in the Netherlands"
   const t = p.title || p.headline
-  if (role === "recruiter") return RECRUITER.test(`${t} ${p.headline}`) ? null : "title is not recruiting/HR"
+  // Their current position title must say it (a headline can mention recruitment for other reasons).
+  if (role === "recruiter") return RECRUITER.test(p.title || p.headline) ? null : "title is not recruiting/HR"
   if (RECRUITER.test(t)) return "a recruiter, not in the department"
   if (role.endsWith("manager")) return MANAGER.test(t) ? null : "title is not a manager"
   return SENIOR.test(t) ? "senior" : null
@@ -77,36 +80,61 @@ if (!LINK_ONLY) {
     console.log(`${pairs.length} employer-and-department pairs, ${todo.length} to search (newest jobs first)`)
     if (DRY) { for (const p of todo.slice(0, 30)) console.log(`  ${p.newest} ${p.display} / ${p.family ?? "(no department)"} -> ${pageOf(p.employer, p.display) ?? "NO LINKEDIN PAGE (run odds-company-info first)"}`); process.exit(0) }
     if (!(await apifyReady())) { console.log("Switch to the browser route in SKILL.md (or ask the user for a working Apify token)."); process.exit(3) }
-    const recruitersDone = new Set<string>()
-    const search = async (page: string, titles: string[], seniority: string[] | null): Promise<Person[]> => {
-      const { items } = await runActor("harvestapi/linkedin-profile-search", { currentCompanies: [page], locations: ["Netherlands"], currentJobTitles: titles, ...(seniority ? { seniorityLevelIds: seniority } : {}), maxItems: 25, takePages: 1, profileScraperMode: "Short" }, { quiet: true })
-      return (items as Array<Record<string, any>>).filter((p) => p.linkedinUrl).map((p) => {
-        const cur = (Array.isArray(p.currentPositions) ? p.currentPositions : []) as Array<Record<string, any>>
-        const here = cur.find((c) => c.companyLinkedinUrl && page.toLowerCase().includes(String(c.companyLinkedinUrl).toLowerCase().replace(/\/+$/, "").split("/").pop() ?? "~")) ?? cur[0] ?? {}
-        return { url: String(p.linkedinUrl), name: [p.firstName, p.lastName].filter(Boolean).join(" "), title: String(here.title ?? ""), headline: String(p.headline ?? ""), company: String(here.companyName ?? ""), companyUrl: String(here.companyLinkedinUrl ?? ""), place: String(p.location?.linkedinText ?? ""), photo: String(p.photo ?? ""), since: String(here.startedOn?.year ?? "") }
-      })
+    // Google finds candidates (apify/google-search-scraper), their whole profiles are read (supreme_coder/linkedin-profile-scraper), and the
+    // fixed rules keep the ones who work at this employer now, in the Netherlands, with a title that fits. Pairs go in batches of BATCH.
+    const BATCH = Number(arg("--batch", "8")), READ = Number(arg("--read", "6"))
+    const words = (d: string | null): string[] => (d ? DEPARTMENT_TITLES[d] ?? [] : []).filter((w) => w.length > 2).slice(0, 2)
+    const titlesFor = (role: Role, d: string | null): string[] =>
+      role === "recruiter" ? ["recruiter", "talent acquisition", "HR business partner", "campus recruiter", "early careers"]
+      : role.endsWith("manager") ? words(d).flatMap((w) => [`${w} manager`, `head of ${w}`, `${w} lead`, `${w} director`])
+      : words(d).flatMap((w) => [w, `junior ${w}`, `${w} associate`, `${w} specialist`])
+    const toPerson = (pr: Profile, employer: string, display: string, page: string): Person => {
+      const cur = currentPositions(pr)
+      const here = cur.find((c) => sameCompany({ name: c.companyName, url: c.companyLinkedinUrl }, employer, display, page))
+      return { url: pr.linkedinUrl, name: `${pr.firstName} ${pr.lastName}`.trim(), title: here?.position ?? "", headline: pr.headline, company: here?.companyName ?? "", companyUrl: here?.companyLinkedinUrl ?? "", place: pr.location.linkedinText, photo: pr.photo, since: String(here?.startDate?.year ?? "") }
     }
+    const recruitersDone = new Set<string>()
     try {
-      for (const pair of todo) {
-        const page = pageOf(pair.employer, pair.display)
-        if (!page) { console.log(`- ${pair.display}: no LinkedIn company page known (run odds-company-info first), skipped`); continue }
-        const keep = (list: Person[], role: Role): Person[] => list.filter((p) => sameCompany({ name: p.company, url: p.companyUrl }, pair.employer, pair.display, page) && !fits(p, role))
-        const dep = pair.family
-        const titlesOf = (d: string | null): string[] => (d ? DEPARTMENT_TITLES[d] ?? [] : []).slice(0, 6)
-        const line: string[] = []
-        let mgr: Person[] = [], peer: Person[] = []
-        if (dep && !pair.has_mgr) { mgr = keep(await search(page, titlesOf(dep), ["200", "210", "220"]), "hiring_manager"); await store(pair.employer, "hiring_manager", dep, mgr); line.push(`managers ${mgr.length}`) }
-        if (dep && !pair.has_peer) { peer = keep(await search(page, titlesOf(dep), ["100", "110"]), "peer"); await store(pair.employer, "peer", dep, peer); line.push(`peers ${peer.length}`) }
-        for (const adj of dep && (!pair.has_mgr && mgr.length === 0 || !pair.has_peer && peer.length === 0) ? adjacentDepartments(dep).slice(0, 2) : []) {
-          if (!pair.has_mgr && mgr.length === 0) { const a = keep(await search(page, titlesOf(adj), ["200", "210", "220"]), "adjacent_manager"); await store(pair.employer, "adjacent_manager", adj, a); line.push(`adjacent managers (${adj}) ${a.length}`); mgr = a }
-          if (!pair.has_peer && peer.length === 0) { const a = keep(await search(page, titlesOf(adj), ["100", "110"]), "adjacent_peer"); await store(pair.employer, "adjacent_peer", adj, a); line.push(`adjacent peers (${adj}) ${a.length}`); peer = a }
+      for (let b = 0; b < todo.length; b += BATCH) {
+        const batch = todo.slice(b, b + BATCH).map((pair) => ({ pair, page: pageOf(pair.employer, pair.display) }))
+        for (const x of batch) if (!x.page) console.log(`- ${x.pair.display}: no LinkedIn company page known (run odds-company-info first), skipped`)
+        const runRound = async (wanted: Array<{ pair: (typeof todo)[0]; page: string; role: Role; dep: string | null }>): Promise<Map<string, Person[]>> => {
+          const qs = wanted.map((w) => profileQuery(w.pair.display, titlesFor(w.role, w.dep)))
+          const found = await discover(qs)
+          const urls = new Set<string>()
+          qs.forEach((q) => (found.get(q) ?? []).slice(0, READ).forEach((r) => urls.add(r.url)))
+          const profiles = await readProfiles([...urls])
+          const out = new Map<string, Person[]>()
+          wanted.forEach((w, i) => {
+            const people = (found.get(qs[i]) ?? []).slice(0, READ).map((r) => profiles.get(r.url)).filter((p): p is Profile => Boolean(p)).map((p) => toPerson(p, w.pair.employer, w.pair.display, w.page))
+            out.set(`${w.pair.employer}|${w.pair.family}|${w.role}|${w.dep}`, people.filter((p) => !fits(p, w.role)))
+          })
+          return out
         }
-        if (!pair.has_rec && !recruitersDone.has(pair.employer)) {
-          recruitersDone.add(pair.employer)
-          const r = keep(await search(page, ["recruiter", "talent acquisition", "HR business partner", "early careers", "campus recruiter", "people partner"], null), "recruiter")
-          await store(pair.employer, "recruiter", null, r); line.push(`recruiters ${r.length}`)
+        const first: Array<{ pair: (typeof todo)[0]; page: string; role: Role; dep: string | null }> = []
+        for (const { pair, page } of batch) {
+          if (!page) continue
+          if (pair.family && !pair.has_mgr) first.push({ pair, page, role: "hiring_manager", dep: pair.family })
+          if (pair.family && !pair.has_peer) first.push({ pair, page, role: "peer", dep: pair.family })
+          if (!pair.has_rec && !recruitersDone.has(pair.employer)) { recruitersDone.add(pair.employer); first.push({ pair, page, role: "recruiter", dep: null }) }
         }
-        console.log(`- ${pair.newest} ${pair.display} / ${dep ?? "(no department)"}: ${line.join(", ") || "nothing new to search"}`)
+        const got = await runRound(first)
+        const second: typeof first = []
+        for (const w of first) {
+          const kept = got.get(`${w.pair.employer}|${w.pair.family}|${w.role}|${w.dep}`) ?? []
+          await store(w.pair.employer, w.role, w.dep, kept)
+          console.log(`- ${w.pair.newest} ${w.pair.display} / ${w.dep ?? "-"} ${w.role}: ${kept.length}`)
+          const adj = adjacentDepartments(w.dep)[0]
+          if (kept.length === 0 && adj && (w.role === "hiring_manager" || w.role === "peer")) second.push({ ...w, role: w.role === "hiring_manager" ? "adjacent_manager" : "adjacent_peer", dep: adj })
+        }
+        if (second.length) {
+          const got2 = await runRound(second)
+          for (const w of second) {
+            const kept = got2.get(`${w.pair.employer}|${w.pair.family}|${w.role}|${w.dep}`) ?? []
+            await store(w.pair.employer, w.role, w.dep, kept)
+            console.log(`- ${w.pair.newest} ${w.pair.display} / ${w.dep} ${w.role}: ${kept.length}`)
+          }
+        }
       }
     } catch (e) {
       if (e instanceof ApifyUnavailable) console.log(`APIFY UNAVAILABLE: ${e.message}\nStopped. Continue with the browser route in SKILL.md.`)

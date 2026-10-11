@@ -19,15 +19,15 @@ job and person; the app shows validated `exact` and `adjacent` rows):
 1. Repo root, odds repo next to it. Employers need a LinkedIn company page (`odds-company-info` step 2).
 2. **Ask the user for their Apify API token**; pass `APIFY_TOKEN=...` on the command line only.
 
-## 1. Run (Apify `harvestapi/linkedin-profile-search`, Full mode, ~$0.10 per search of 15 profiles)
+## 1. Run (Apify: Google `apify/google-search-scraper` + `supreme_coder/linkedin-profile-scraper`, ~$0.035 per search)
 
 ```bash
 bun skills/odds-past-hires/scripts/run.ts --dry                     # the searches, newest jobs first
 APIFY_TOKEN=... bun skills/odds-past-hires/scripts/run.ts --limit 30
-APIFY_TOKEN=... bun skills/odds-past-hires/scripts/run.ts --reuse-last   # write the last paid search again (after a failed write)
 ```
-One search per employer, title words and level: people whose past company is this employer and whose past title is the job's words + level
-(and the department's main title + level). Jobs that already have validated evidence are skipped, so re-running continues.
+One search per employer, title words and level: Google `site:linkedin.com/in "<company>" ("<title words> intern" OR "… internship" OR "… stagiair" OR
+"… trainee")` (entry jobs: junior / graduate / associate / trainee), no location (people move); the top results (`--read 6`) are read in full
+(every position with dates) and the rules decide. Searches go in batches (`--batch 10`). Jobs that already have validated evidence are skipped, so re-running continues.
 Then run `odds-typesafe-cluster --past-hires`: Jev reads each held role against the posting and corrects exact/adjacent or hides unrelated ones.
 `APIFY UNAVAILABLE` (exit 3) → browser route.
 
