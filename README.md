@@ -1,5 +1,7 @@
 # scrape-skills-odds
 
+**Agents: read [AGENTS.md](AGENTS.md) first** (what odds is, where files are, how to start, Apify rules, current state).
+
 Skills that fill the data behind odds' internship and entry-level job table: for each job, newest first, the people to reach out to,
 the people who held the role before, what employees say about the company and the role, and the company's published numbers - plus
 new jobs from LinkedIn and Glassdoor.
