@@ -1,5 +1,5 @@
 /**
- * How complete the per-job data is for the jobs in scope (internship and entry, no Dutch, posted in the last DAYS days).
+ * How complete the per-job data is for the jobs in the table active_internship_entry_english (posted in the last DAYS days).
  *   bun coverage.ts [--days 30]
  */
 import { sql } from "./lib/db"
@@ -46,5 +46,5 @@ select count(*) jobs,
   count(*) filter (where not contacts and not past_any and not reviews and not linkedin_facts and not revenue and not news) nothing
 from h`)
 const n = Number(r.jobs)
-console.log(`${n} jobs in scope (internship + entry, no Dutch, last ${DAYS} days)${contactsTable ? "" : "  [job_outreach_contacts not created yet]"}`)
+console.log(`${n} jobs in active_internship_entry_english (posted in the last ${DAYS} days)${contactsTable ? "" : "  [job_outreach_contacts not created yet]"}`)
 for (const [k, v] of Object.entries(r)) if (k !== "jobs") console.log(`  ${k.padEnd(30)} ${String(v).padStart(5)}  ${((100 * Number(v)) / Math.max(n, 1)).toFixed(1).padStart(5)}%`)

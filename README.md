@@ -4,8 +4,8 @@ Skills that fill the data behind odds' internship and entry-level job table: for
 the people who held the role before, what employees say about the company and the role, and the company's published numbers - plus
 new jobs from LinkedIn and Glassdoor.
 
-Scope, always: `app_jobs` rows with `level_view in ('Internship','Entry')`, `dutch_required is not true`, posted in the last 30 days
-(`coalesce(posted_on, current_date - days_open)`), newest first (`lib/scope.ts`).
+**Table, always: the view `active_internship_entry_english`** (internship and entry-level jobs, still open, no Dutch needed), jobs posted in
+the last 30 days (`coalesce(posted_on, current_date - days_open)`), **filled from the newest job to the oldest** (`lib/scope.ts`).
 
 Data is collected as published. Fixed rules (`lib/rules.ts`) keep or drop it; TypeSafe (Jev) only classifies; no model writes or
 rewrites anything people read.

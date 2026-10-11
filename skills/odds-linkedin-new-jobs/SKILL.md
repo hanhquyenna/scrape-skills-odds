@@ -5,6 +5,12 @@ description: Add new internship and entry-level jobs in the Netherlands from Lin
 
 # New LinkedIn jobs → odds
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills: `postings` (the app reads them through `app_jobs`). Only jobs that fit the table are saved: internship or entry level, posting in
 English, no Dutch needed, in the Netherlands, open, not held yet. Shared setup, scope and rules: `README.md` at the repo root.
 

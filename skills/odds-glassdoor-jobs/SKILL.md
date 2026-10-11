@@ -5,6 +5,12 @@ description: Add new internship and entry-level jobs in the Netherlands from Gla
 
 # New Glassdoor jobs → odds
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills: `postings` (`ats = 'glassdoor'`). Same intake rules as LinkedIn jobs (`lib/intake.ts`). Shared setup: `README.md`.
 
 ## 0. Before running

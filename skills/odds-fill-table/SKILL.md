@@ -5,6 +5,12 @@ description: Fill every kind of per-job data for odds' internship and entry jobs
 
 # Fill the internship/entry table, everything, in order
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Work from the `scrape-skills-odds` repo root with the odds repo next to it (see `README.md`).
 
 1. **See what is missing**: `bun coverage.ts`. Report the numbers to the user.

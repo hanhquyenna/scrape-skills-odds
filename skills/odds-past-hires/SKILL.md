@@ -5,6 +5,12 @@ description: Find successful historical candidates for each odds internship/entr
 
 # Successful historical candidates per job
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills `candidate_profiles`, `candidate_experience` (whole work history), `candidate_education`, and `job_candidate_evidence` (one row per
 job and person; the app shows validated `exact` and `adjacent` rows):
 - `status = 'exact'`: same employer, same level (internship words for an internship, junior/graduate/associate words for an entry job),

@@ -5,6 +5,12 @@ description: Fill Glassdoor employee reviews for the employers of odds' internsh
 
 # Glassdoor reviews per company and per role
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills:
 - `employer_glassdoor` (the company's Glassdoor page) and `employer_glassdoor_reviews` (each review: date, title, role, current/former,
   place, overall and sub-ratings, recommend, CEO, outlook, pros, cons). The job page's rating averages come from these reviews.

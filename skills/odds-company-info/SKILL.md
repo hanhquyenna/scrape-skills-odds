@@ -5,6 +5,12 @@ description: Fill company information for the employers of odds' internship and 
 
 # Company information (numbers and facts, as published)
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills:
 - `employer_money`: revenue, net_profit, market_value, total_assets, **one row per year** (growth = two or more years), with currency and source.
 - `employer_headcount`: employees by date, per source (`wikidata`, `linkedin`, `company_report`). Growth is only compared within one source.

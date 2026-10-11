@@ -5,6 +5,12 @@ description: Check and cluster the data the other odds skills collected, with Ty
 
 # Verify and cluster with TypeSafe (Jev)
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Jev only classifies (yes/no probabilities and labels). It never writes text that people read; nothing is rewritten.
 
 ## 0. Before running

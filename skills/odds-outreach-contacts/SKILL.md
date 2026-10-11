@@ -5,6 +5,12 @@ description: Find people to reach out to for each odds internship/entry job (new
 
 # Outreach contacts per job
 
+## Table and order (always)
+
+Table: the view **`active_internship_entry_english`** in the odds database: internship and entry-level jobs that are still open and do not
+need Dutch. Scope: jobs posted in the last 30 days (`--days`), **filled from the newest job to the oldest**, so whatever runs out first
+(credit, time) leaves the oldest jobs unfilled. Do not fill other jobs (senior, Dutch, closed, older). Check with `bun coverage.ts`.
+
 Fills:
 - `job_people` (per employer): name, LinkedIn URL, current title, place, photo; `jev.role` = `hiring_manager` | `peer` |
   `adjacent_manager` | `adjacent_peer` | `recruiter`, `jev.department` = the standard department searched.
