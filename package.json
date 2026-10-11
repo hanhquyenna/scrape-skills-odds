@@ -1,0 +1,13 @@
+{
+  "name": "scrape-skills-odds",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "coverage": "bun coverage.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "1.2.23",
+    "typescript": "5.9.3"
+  }
+}
