@@ -16,7 +16,7 @@ const DAYS = Number(arg("--days", "7")), N = Number(arg("--agents", "5")), PREFI
 const has = (role: string, byDept: boolean): string =>
   `exists (select 1 from job_people j where lower(j.employer) in (lower(trim(p.employer)), lower(trim(p.d))) and j.jev->>'role' = '${role}' ${byDept ? "and j.jev->>'department' = p.family" : ""} and coalesce(j.jev->>'decision_final','') <> 'reject')`
 const pairs = (await sql(`with p0 as (select employer, coalesce(employer_display, employer) d, family from app_jobs where ${scopeWhere(DAYS)})
-  select employer, d as display, family as department, count(*) jobs from p0 p where family is not null and (not ${has("hiring_manager", true)} or not ${has("peer", true)}) group by 1,2,3 order by jobs desc limit 80`))
+  select employer, d as display, family as department, count(*) jobs from p0 p where family is not null and (not ${has("hiring_manager", true)} or not ${has("peer", true)}) group by 1,2,3 order by jobs desc limit 120`))
 const recruiters = (await sql(`with p0 as (select employer, coalesce(employer_display, employer) d, family from app_jobs where ${scopeWhere(DAYS)})
   select employer, d as display, count(*) jobs from p0 p where not ${has("recruiter", false)} group by 1,2 order by jobs desc limit 60`))
 const jobs = (await sql(`select id, coalesce(employer_display, employer) display, employer, coalesce(title_clean, title) title from app_jobs

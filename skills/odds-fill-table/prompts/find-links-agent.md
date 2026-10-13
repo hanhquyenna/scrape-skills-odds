@@ -21,5 +21,5 @@ site:linkedin.com/in <Company> "<title word>" <Dutch city>. Run several searches
 3. past_hire_jobs: people who are or were interns/juniors/graduates in the same or a nearby role at that employer; up to 6 URLs; write
    DIR/links_past_N.json: [{ "jobId": <id>, "urls": [...] }]
 
-Only URLs you actually saw in results; never invent URLs; no contact details. About 45 searches at most. Write the files even if some
+Only URLs you actually saw in results; never invent URLs; no contact details. About 30 searches at most (web search is capped at 200 per turn for all agents together). Write the files even if some
 lists are empty, then reply with counts only.

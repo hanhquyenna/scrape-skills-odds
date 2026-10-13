@@ -34,7 +34,9 @@ Work from the `scrape-skills-odds` repo root with the odds repo next to it (see 
 The slow part of finding people is one agent searching one company at a time, not Apify. So split it (measured: 5 agents, about 1 minute each):
 1. `bun skills/odds-fill-table/scripts/assign.ts <dir> --days 7 --agents 5` -> `<dir>/a_assign_1..5.json` (employer-and-department pairs without a
    hiring manager or peer, employers without a recruiter, jobs without past hires; newest and most-jobs first).
-2. Start one helper agent per list, in the background, with `skills/odds-fill-table/prompts/find-links-agent.md` (fill DIR and N). Helpers only
+2. **Web search is capped at 200 searches per turn, shared by all agents of that turn** (measured 13 Oct 2026: with 6 agents x 50 the last ones were cut off
+   after 4-20 searches). Keep it under that: 5 agents x 30 searches, or run the next round in a new turn. Agents report which pairs stayed empty.
+   Start one helper agent per list, in the background, with `skills/odds-fill-table/prompts/find-links-agent.md` (fill DIR and N). Helpers only
    web-search and write `links_*_N.json`; they never call Apify or the database (so credit is not split or burnt in parallel).
 3. When all finish: `bun skills/odds-fill-table/scripts/merge-links.ts <dir>`; it prints how many profiles (and about what cost) will be read.
 4. Read and store with the user's token, spending the credit on outreach first: `read-urls.ts` then `run.ts --from-file` in `odds-outreach-contacts`.
