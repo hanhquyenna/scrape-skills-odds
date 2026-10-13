@@ -24,10 +24,10 @@ function clean(v: string): string {
     .replace(/\{\{\s*(US\$|USD|EUR|euro|GBP|CHF|SEK|DKK|NOK|JPY)\s*\|\s*([\d.,]+)\s*\|?\s*([a-z]*)[^}]*\}\}/gi, (_m, c, n, s) => `${CUR[String(c).toLowerCase()] ?? c} ${n} ${s}`)
     .replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, "$1").replace(/\{\{[^{}]*\}\}/g, " ").replace(/&nbsp;/g, " ").replace(/'''?/g, "").replace(/\s+/g, " ").trim()
 }
-const SC: Record<string, number> = { billion: 1e9, bn: 1e9, million: 1e6, m: 1e6, mn: 1e6, thousand: 1e3 }
+const SC: Record<string, number> = { billion: 1e9, bn: 1e9, b: 1e9, million: 1e6, m: 1e6, mn: 1e6, thousand: 1e3 }
 function money(text: string): { amount: number; currency: string; year: number; quote: string } | null {
   const y = /\(\s*(?:FY\s*)?(20[12]\d)\s*\)|\b(20[12]\d)\b/.exec(text); if (!y) return null
-  const m = /(€|\$|£|¥|US\$|EUR|USD|GBP|CHF|SEK|DKK|NOK|JPY)\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?|\d+(?:[.,]\d+)?)\s*(billion|bn|million|mn|m|thousand)?/i.exec(text)
+  const m = /(€|\$|£|¥|US\$|EUR|USD|GBP|CHF|SEK|DKK|NOK|JPY)\s*([\d]{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?|\d+(?:[.,]\d+)?)\s*(billion|bn|b|million|mn|m|thousand)?\b/i.exec(text)
   if (!m) return null
   const cur = CUR[m[1].toLowerCase()]; if (!cur) return null
   const n = Number(m[2].replace(/,(?=\d{3}\b)/g, "")); if (!Number.isFinite(n)) return null

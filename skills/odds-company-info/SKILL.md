@@ -64,3 +64,10 @@ industries, specialities, peopleStats`) with `"employer": "<app_jobs.employer>"`
 ## Check
 
 `bun coverage.ts` (`linkedin_facts`, `revenue`, `revenue_growth`, `profit`, `net_worth`, `headcount_growth`).
+
+## Free numbers from Wikipedia (13 Oct 2026)
+
+`bun skills/odds-company-info/scripts/wikipedia-facts.ts --days 7 --out facts.json` then `bun skills/odds-company-info/scripts/ingest-facts.ts facts.json`.
+Reads each employer's English Wikipedia "Infobox company" (revenue, net income, assets, employees, each with the year the page states), keeps only a page
+whose title is the employer's name, and ingest-facts.ts still checks that the quote states the amount and the year. Measured: 7-day jobs with revenue
+20.9% -> 36.8%, profit 18.9% -> 28.7%, net worth 13.2% -> 22.6%, at no cost. Most of what is left are small or private companies with no published figures.

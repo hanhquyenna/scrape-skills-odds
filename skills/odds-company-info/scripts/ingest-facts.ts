@@ -37,6 +37,9 @@ export function amountsIn(quote: string): number[] {
     else raw = raw.replace(/[.,]/g, "")
     const scale = SCALE.find(([rx]) => rx.test(m[2] ?? ""))?.[1] ?? 1
     out.push(Number(raw) * scale)
+    // "4.957 billion" / "€29.821 B": with a scale word a single separator followed by three digits is a decimal point, not a thousands separator.
+    const one = m[1].replace(/\s/g, "")
+    if (scale > 1 && /^\d{1,3}[.,]\d{3}$/.test(one)) out.push(Number(one.replace(",", ".")) * scale)
   }
   return out
 }
