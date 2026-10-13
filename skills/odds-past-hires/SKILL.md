@@ -67,3 +67,9 @@ For each job the `--dry` run lists:
 ## Check
 
 `bun coverage.ts` (`past_hires_exact`, `past_hires_exact_or_adjacent`).
+
+## Fix: shown candidates with no Experience (14 Oct 2026)
+
+Profiles created from a Google/header snippet (before full reads) had evidence but no `candidate_experience` rows, so the candidate card showed only Education
+and Details. `bun skills/odds-past-hires/scripts/fill-profiles.ts [--limit 100]` reads the whole public profile for every shown candidate (validated evidence) that
+lacks experience or education and stores positions and schools. Run it after any run that adds candidates; `run.ts` itself always stores full experience.
