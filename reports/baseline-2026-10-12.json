@@ -1,0 +1,5 @@
+{
+  "note": "Where this work started (12 Oct 2026, before the Apify runs). Percent of jobs in active_internship_entry_english that have the data. The 7-day window had 274 jobs, the 30-day window 759.",
+  "d7":  { "jobs": 274, "contacts": 33.2, "hiring_manager_in_dept": 13.9, "peers_not_senior": 17.2, "recruiter": 22.3, "past_hires_exact": 9.5, "past_hires_exact_or_adjacent": 19.3, "reviews_employer": 84.3, "reviews_same_role": 16.4, "linkedin_facts": 85.8, "revenue": 25.5, "net_worth": 15.0, "news": 5.5, "nothing": 5.8 },
+  "d30": { "jobs": 759, "contacts": 66.0, "hiring_manager_in_dept": 10.5, "peers_not_senior": 12.1, "recruiter": 25.2, "past_hires_exact": 9.4, "past_hires_exact_or_adjacent": 21.9, "reviews_employer": 88.4, "reviews_same_role": 18.1, "linkedin_facts": 92.4, "revenue": 27.4, "net_worth": 16.5, "news": 14.0, "nothing": 2.9 }
+}

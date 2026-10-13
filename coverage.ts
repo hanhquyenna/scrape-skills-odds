@@ -3,7 +3,7 @@
  *   bun coverage.ts [--days 30]
  */
 import { sql } from "./lib/db"
-import { arg } from "./lib/env"
+import { arg, flag } from "./lib/env"
 import { scopeWhere } from "./lib/scope"
 
 const DAYS = Number(arg("--days", "30"))
@@ -49,5 +49,6 @@ select count(*) jobs,
   count(*) filter (where not contacts and not past_any and not reviews and not linkedin_facts and not revenue and not news) nothing
 from h`)
 const n = Number(r.jobs)
+if (flag("--json")) { console.log(JSON.stringify({ days: DAYS, ...r })); process.exit(0) }
 console.log(`${n} jobs in active_internship_entry_english (posted in the last ${DAYS} days)${contactsTable ? "" : "  [job_outreach_contacts not created yet]"}`)
 for (const [k, v] of Object.entries(r)) if (k !== "jobs") console.log(`  ${k.padEnd(30)} ${String(v).padStart(5)}  ${((100 * Number(v)) / Math.max(n, 1)).toFixed(1).padStart(5)}%`)

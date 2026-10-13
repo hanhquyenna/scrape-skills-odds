@@ -54,11 +54,15 @@ Key tables/views: `postings` (all jobs; `closed_at` marks closed ones), views `a
 `candidate_profiles`, `candidate_experience`, `candidate_education`, `job_candidate_evidence` (past hires per job; the app shows
 `validated` rows with status `exact` or `adjacent`).
 
+**Also read `LEARNINGS.md` (what we measured, limits, costs, the order that works) and run the metrics report first.**
+
 ## The skills (each has its own SKILL.md with steps, and a browser route for when Apify cannot run)
 
 | Skill | Fills |
 |---|---|
-| `skills/odds-fill-table` | runs all the others in order and reports coverage before → after |
+| `skills/odds-playbook` | **the optimized end-to-end process: what to run in which order, with costs and limits** |
+| `skills/odds-metrics-report` | **the metrics: % of jobs with each kind of data, 7 and 30 days, change vs start and vs the last report (`reports/` snapshots)** |
+| `skills/odds-fill-table` | runs all the others in order; the "Parallel route" with helper agents (assign / merge / prompt) |
 | `skills/odds-linkedin-new-jobs`, `skills/odds-glassdoor-jobs` | new jobs |
 | `skills/odds-company-info` | revenue, profit, net worth, growth, headcount, LinkedIn company page |
 | `skills/odds-glassdoor-reviews` | reviews per company and per role |

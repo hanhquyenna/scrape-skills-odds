@@ -1,6 +1,6 @@
 # scrape-skills-odds
 
-**Agents: read [AGENTS.md](AGENTS.md) first** (what odds is, where files are, how to start, Apify rules, current state).
+**Agents: read [AGENTS.md](AGENTS.md) and [LEARNINGS.md](LEARNINGS.md) first** (what odds is, where files are, how to start, Apify rules, current state).
 
 Skills that fill the data behind odds' internship and entry-level job table: for each job, newest first, the people to reach out to,
 the people who held the role before, what employees say about the company and the role, and the company's published numbers - plus
@@ -16,7 +16,9 @@ rewrites anything people read.
 
 | Skill | Fills | Apify actor (free credits) | Without Apify |
 |---|---|---|---|
-| [odds-fill-table](skills/odds-fill-table/SKILL.md) | everything, in order | - | - |
+| [odds-playbook](skills/odds-playbook/SKILL.md) | the optimized end-to-end process (order, costs, limits) | - | - |
+| [odds-metrics-report](skills/odds-metrics-report/SKILL.md) | the metrics report, 7 and 30 days, change vs start / last snapshot | - | - |
+| [odds-fill-table](skills/odds-fill-table/SKILL.md) | everything, in order; parallel helper agents | - | - |
 | [odds-linkedin-new-jobs](skills/odds-linkedin-new-jobs/SKILL.md) | new jobs (postings) | `valig/linkedin-jobs-scraper` | odds' public-page reader, or browser |
 | [odds-glassdoor-jobs](skills/odds-glassdoor-jobs/SKILL.md) | new jobs (postings) | `valig/glassdoor-jobs-scraper` | browser |
 | [odds-glassdoor-reviews](skills/odds-glassdoor-reviews/SKILL.md) | reviews per company, per role | `apify/google-search-scraper` + `kaix/glassdoor-reviews-scraper` | browser |
