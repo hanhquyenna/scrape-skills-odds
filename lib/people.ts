@@ -67,6 +67,30 @@ export async function readProfiles(urls: string[]): Promise<Map<string, Profile>
       education: ((it.educations ?? []) as Array<Record<string, any>>).map((e) => ({ schoolName: String(e.schoolName ?? ""), degree: String(e.degreeName ?? ""), fieldOfStudy: String(e.fieldOfStudy ?? ""), startDate: e.timePeriod?.startDate ?? null, endDate: e.timePeriod?.endDate ?? null })),
     })
   }
+  // The reader above uses shared LinkedIn accounts and sometimes returns nothing ("no available accounts found"); the ones it missed are read
+  // by harvestapi/linkedin-profile-scraper, whose output already has this shape (measured 13 Oct 2026: 3 of 3 read where the first returned 0).
+  const missing = unique.filter((u) => !out.has(profileUrl(u) ?? u))
+  if (missing.length) {
+    // Free accounts get at most 10 items per run of this actor ("Free users are limited up to 10 items per run"), so it is called in chunks of 10.
+    const more: Array<Record<string, any>> = []
+    for (let i = 0; i < missing.length; i += 10) {
+      const chunk = missing.slice(i, i + 10).filter((u) => !u.includes("%"))
+      if (chunk.length) more.push(...((await runActor("harvestapi/linkedin-profile-scraper", { urls: chunk, profileScraperMode: "Profile details no email ($4 per 1k)" }, { quiet: true })).items as Array<Record<string, any>>))
+    }
+    for (const it of more) {
+      const url = profileUrl(String(it.linkedinUrl ?? "")) ?? (it.publicIdentifier ? `https://www.linkedin.com/in/${String(it.publicIdentifier).toLowerCase()}` : null)
+      if (!url || !it.firstName) continue
+      out.set(url, {
+        linkedinUrl: url, publicIdentifier: String(it.publicIdentifier ?? ""), firstName: String(it.firstName ?? ""), lastName: String(it.lastName ?? ""),
+        headline: String(it.headline ?? ""), photo: String(it.photo ?? ""), location: { linkedinText: String(it.location?.linkedinText ?? "") },
+        experience: ((it.experience ?? []) as Array<Record<string, any>>).map((e) => ({
+          position: String(e.position ?? ""), companyName: String(e.companyName ?? ""), companyLinkedinUrl: String(e.companyLinkedinUrl ?? ""),
+          startDate: e.startDate ?? null, endDate: e.endDate ?? { text: "Present" }, employmentType: String(e.employmentType ?? ""), description: String(e.description ?? ""), location: String(e.location ?? ""),
+        })),
+        education: ((it.education ?? []) as Array<Record<string, any>>).map((e) => ({ schoolName: String(e.schoolName ?? ""), degree: String(e.degree ?? ""), fieldOfStudy: String(e.fieldOfStudy ?? ""), startDate: e.startDate ?? null, endDate: e.endDate ?? null })),
+      })
+    }
+  }
   return out
 }
 
