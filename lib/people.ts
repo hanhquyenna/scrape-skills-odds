@@ -73,9 +73,12 @@ export async function readProfiles(urls: string[]): Promise<Map<string, Profile>
   if (missing.length) {
     // Free accounts get at most 10 items per run of this actor ("Free users are limited up to 10 items per run"), so it is called in chunks of 10.
     const more: Array<Record<string, any>> = []
-    for (let i = 0; i < missing.length; i += 10) {
-      const chunk = missing.slice(i, i + 10).filter((u) => !u.includes("%"))
-      if (chunk.length) more.push(...((await runActor("harvestapi/linkedin-profile-scraper", { urls: chunk, profileScraperMode: "Profile details no email ($4 per 1k)" }, { quiet: true })).items as Array<Record<string, any>>))
+    const chunks: string[][] = []
+    for (let i = 0; i < missing.length; i += 10) chunks.push(missing.slice(i, i + 10).filter((u) => !u.includes("%")))
+    // 4 runs at a time: one after the other took ~40 s each (39 runs = 26 min for 390 profiles)
+    for (let i = 0; i < chunks.length; i += 4) {
+      const got = await Promise.all(chunks.slice(i, i + 4).filter((c) => c.length).map((chunk) => runActor("harvestapi/linkedin-profile-scraper", { urls: chunk, profileScraperMode: "Profile details no email ($4 per 1k)" }, { quiet: true }).then((r) => r.items as Array<Record<string, any>>).catch(() => [])))
+      for (const g of got) more.push(...g)
     }
     for (const it of more) {
       const url = profileUrl(String(it.linkedinUrl ?? "")) ?? (it.publicIdentifier ? `https://www.linkedin.com/in/${String(it.publicIdentifier).toLowerCase()}` : null)
