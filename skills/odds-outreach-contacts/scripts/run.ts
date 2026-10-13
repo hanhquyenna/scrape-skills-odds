@@ -157,13 +157,16 @@ const out = await sql<{ n: number; jobs: number }>(`
   with jobs as (select id, employer, family from app_jobs where ${scopeWhere(DAYS)}),
   links as (
     select j.id posting_id, p.employer, p.profile_url, coalesce(p.jev->>'role', case when p.headline ~* 'recruit|talent|\\mhr\\M|human resources' then 'recruiter' end) role, p.jev->>'department' department
-    from jobs j join job_people p on p.employer = j.employer and coalesce(p.jev->>'decision_final', '') <> 'reject'
+    from jobs j join job_people p on coalesce(p.jev->>'decision_final', '') <> 'reject'
+      and (lower(p.employer) = lower(j.employer) or exists (select 1 from employer_facts f1 join employer_facts f2 on f2.linkedin_url = f1.linkedin_url
+        where f1.linkedin_url is not null and lower(f1.employer) = lower(j.employer) and lower(f2.employer) = lower(p.employer)))  -- same LinkedIn page = same company
   )
   insert into job_outreach_contacts (posting_id, employer, profile_url, role, department, rank)
-  select l.posting_id, l.employer, l.profile_url, l.role, l.department,
+  select distinct on (l.posting_id, l.profile_url) l.posting_id, l.employer, l.profile_url, l.role, l.department,
     case l.role when 'hiring_manager' then 1 when 'peer' then 2 when 'adjacent_manager' then 3 when 'adjacent_peer' then 4 when 'recruiter' then 5 else 6 end
       + case when l.department is not null and l.department is distinct from (select family from jobs where id = l.posting_id) and l.role in ('hiring_manager','peer') then 2 else 0 end
   from links l where l.role is not null
+  order by l.posting_id, l.profile_url, 6
   on conflict (posting_id, profile_url) do update set role = excluded.role, department = excluded.department, rank = excluded.rank
   returning 1 as n`)
 console.log(`linked ${out.length} contacts to jobs`)

@@ -11,7 +11,10 @@ const has = async (t: string): Promise<boolean> => (await sql(`select to_regclas
 const contactsTable = await has("job_outreach_contacts"), reviewsTable = await has("job_glassdoor_reviews")
 
 const [r] = await sql(`
-with pool as (select id, family, lower(trim(employer)) e1, lower(trim(coalesce(employer_display, employer))) e2 from app_jobs where ${scopeWhere(DAYS)}),
+with base as (select id, family, lower(trim(employer)) e1, lower(trim(coalesce(employer_display, employer))) e2 from app_jobs where ${scopeWhere(DAYS)}),
+-- names that share one LinkedIn company page are one company ("Koninklijke Philips Electronics N.V." = "Philips")
+al as (select lower(f1.employer) a, lower(f2.employer) b from employer_facts f1 join employer_facts f2 on f2.linkedin_url = f1.linkedin_url where f1.linkedin_url is not null),
+pool as (select b.*, array[b.e1, b.e2] || coalesce((select array_agg(distinct al.b) from al where al.a in (b.e1, b.e2)), '{}') names from base b),
 people as (
   select lower(employer) emp, coalesce(jev->>'role', '') role,
     jev->>'role' = 'recruiter' or (jev->>'role' is null and headline ~* '(recruit|talent acquisition|\\mhr\\M|human resources|people partner|early careers|campus)') is_recruiter,
@@ -19,22 +22,22 @@ people as (
   from job_people where coalesce(jev->>'decision_final', '') <> 'reject'),
 h as (
   select p.id,
-    exists (select 1 from people j where j.emp in (p.e1, p.e2)) contacts,
-    exists (select 1 from people j where j.emp in (p.e1, p.e2) and j.role = 'hiring_manager') hiring_manager_dept,
-    exists (select 1 from people j where j.emp in (p.e1, p.e2) and j.is_manager) any_manager,
-    exists (select 1 from people j where j.emp in (p.e1, p.e2) and j.role in ('peer','adjacent_peer')) peers,
-    exists (select 1 from people j where j.emp in (p.e1, p.e2) and j.is_recruiter) recruiter,
+    exists (select 1 from people j where j.emp = any(p.names)) contacts,
+    exists (select 1 from people j where j.emp = any(p.names) and j.role = 'hiring_manager') hiring_manager_dept,
+    exists (select 1 from people j where j.emp = any(p.names) and j.is_manager) any_manager,
+    exists (select 1 from people j where j.emp = any(p.names) and j.role in ('peer','adjacent_peer')) peers,
+    exists (select 1 from people j where j.emp = any(p.names) and j.is_recruiter) recruiter,
     exists (select 1 from job_candidate_evidence c where c.posting_id = p.id and c.validation_status = 'validated' and c.status = 'exact') past_exact,
     exists (select 1 from job_candidate_evidence c where c.posting_id = p.id and c.validation_status = 'validated' and c.status in ('exact','adjacent')) past_any,
-    exists (select 1 from employer_glassdoor_reviews r where lower(r.employer) in (p.e1, p.e2)) reviews,
+    exists (select 1 from employer_glassdoor_reviews r where lower(r.employer) = any(p.names)) reviews,
     ${reviewsTable ? "exists (select 1 from job_glassdoor_reviews x where x.posting_id = p.id and x.match = 'same_role')" : "false"} reviews_role,
-    exists (select 1 from employer_facts f where lower(f.employer) in (p.e1, p.e2)) linkedin_facts,
-    exists (select 1 from employer_money m where lower(m.employer) in (p.e1, p.e2) and m.kind = 'revenue') revenue,
-    (select count(distinct m.year) from employer_money m where lower(m.employer) in (p.e1, p.e2) and m.kind = 'revenue') >= 2 revenue_growth,
-    exists (select 1 from employer_money m where lower(m.employer) in (p.e1, p.e2) and m.kind = 'net_profit') profit,
-    exists (select 1 from employer_money m where lower(m.employer) in (p.e1, p.e2) and m.kind in ('market_value','total_assets')) net_worth,
-    exists (select 1 from employer_headcount x where lower(x.employer) in (p.e1, p.e2) group by x.source having count(distinct x.read_on) >= 2) headcount_growth,
-    exists (select 1 from employer_news n where lower(n.employer) in (p.e1, p.e2)) news
+    exists (select 1 from employer_facts f where lower(f.employer) = any(p.names)) linkedin_facts,
+    exists (select 1 from employer_money m where lower(m.employer) = any(p.names) and m.kind = 'revenue') revenue,
+    (select count(distinct m.year) from employer_money m where lower(m.employer) = any(p.names) and m.kind = 'revenue') >= 2 revenue_growth,
+    exists (select 1 from employer_money m where lower(m.employer) = any(p.names) and m.kind = 'net_profit') profit,
+    exists (select 1 from employer_money m where lower(m.employer) = any(p.names) and m.kind in ('market_value','total_assets')) net_worth,
+    exists (select 1 from employer_headcount x where lower(x.employer) = any(p.names) group by x.source having count(distinct x.read_on) >= 2) headcount_growth,
+    exists (select 1 from employer_news n where lower(n.employer) = any(p.names)) news
   from pool p)
 select count(*) jobs,
   count(*) filter (where contacts) contacts, count(*) filter (where hiring_manager_dept) hiring_manager_in_dept, count(*) filter (where any_manager) any_manager,
