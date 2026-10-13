@@ -49,6 +49,9 @@ past hires (exact or adjacent) went 28.7% -> 36.1% for about $0.4.
 4. `APIFY_TOKEN=... bun skills/odds-past-hires/scripts/read-urls.ts links.json profiles.json` then `bun skills/odds-past-hires/scripts/run.ts --from-file profiles.json`.
    The fixed rules decide exact / adjacent. If the shared-account reader says "no available accounts found", `lib/people.ts` falls back to
    harvestapi/linkedin-profile-scraper in chunks of 10 (free accounts: at most 10 items per run).
+5. Free extra: `bun skills/odds-past-hires/scripts/reuse-read.ts <dir>` pools every profile already read and matches it against the other jobs of the same
+   employer; then `run.ts --from-file <dir>/reuse.json`. (37.0% -> 43.5% at no Apify cost.) Returns shrink once the big employers are covered: small
+   companies and hotels give 0-3 matches per 30 profiles.
 
 ## Browser route (LinkedIn, signed in as the user)
 
