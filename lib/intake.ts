@@ -12,7 +12,7 @@ import { ODDS_REPO } from "./env"
 
 export interface JobInput {
   /** Where it was found: "linkedin" or "glassdoor" (goes to postings.ats). */
-  ats: "linkedin" | "glassdoor"
+  ats: "linkedin" | "glassdoor" | "indeed"
   /** postings.source, e.g. "linkedin_apify", "glassdoor_apify", "linkedin_browser". */
   source: string
   /** The job's own id at the source (LinkedIn job id, Glassdoor listing id). */

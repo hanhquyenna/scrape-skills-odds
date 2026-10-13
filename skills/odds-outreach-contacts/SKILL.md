@@ -54,6 +54,16 @@ shortlist to Apify gave 61% kept people (~$0.008 per kept person) and moved 7-da
 3. `APIFY_TOKEN=... bun skills/odds-outreach-contacts/scripts/read-urls.ts <dir>/merged_people.json <dir>/people.json` (reads each profile, ~$0.005).
 4. `bun skills/odds-outreach-contacts/scripts/run.ts --from-file <dir>/people.json`, then `... --link-only`. The fixed rules decide who is kept.
 
+## 1c. Company People page in the signed-in browser: everyone at a company, adjacent departments included (measured 14 Oct 2026)
+
+For employers with nobody found (tiny companies, hotels, names the search does not match), open `https://www.linkedin.com/company/<slug>/people/`
+(slug from `employer_facts.linkedin_url`) in the built-in browser signed in to LinkedIn. It lists the company's employees, recruiters included.
+1. Collect the profile links: `[...new Set([...document.querySelectorAll('main a[href*="/in/"]')].filter(a=>a.innerText.trim().length>2).map(a=>a.href.split('?')[0]))]` (about 24 per page; skip links with `%`).
+2. `links.json` = `{ "<employer as in app_jobs>": [urls] }`, then `bun skills/odds-outreach-contacts/scripts/expand-company-people.ts links.json groups.json`:
+   it offers the same links for hiring manager and peer in each of the employer's departments, for the nearest departments (adjacent manager / adjacent peer)
+   and for recruiter. 3. `read-urls.ts groups.json people.json` -> `run.ts --from-file people.json` -> `run.ts --link-only`. The fixed rules decide.
+Skip very large employers (Marriott, Google): the list is worldwide and few are in the Netherlands.
+
 ## Browser route (LinkedIn people search, signed in as the user)
 
 For each pair the `--dry` run lists (employer, department):
