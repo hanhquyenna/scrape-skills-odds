@@ -1,0 +1,41 @@
+{
+ "at": "2026-10-13T15:06:06.142Z",
+ "d7": {
+  "jobs": 425,
+  "contacts": 284,
+  "hiring_manager_in_dept": 230,
+  "peers_not_senior": 201,
+  "recruiter": 143,
+  "past_hires_exact": 45,
+  "past_hires_exact_or_adjacent": 111,
+  "reviews_employer": 332,
+  "reviews_same_role": 73,
+  "linkedin_facts": 370,
+  "revenue": 121,
+  "revenue_growth": 59,
+  "profit": 90,
+  "net_worth": 71,
+  "headcount_growth": 94,
+  "news": 39,
+  "nothing": 25
+ },
+ "d30": {
+  "jobs": 917,
+  "contacts": 704,
+  "hiring_manager_in_dept": 470,
+  "peers_not_senior": 419,
+  "recruiter": 357,
+  "past_hires_exact": 98,
+  "past_hires_exact_or_adjacent": 299,
+  "reviews_employer": 779,
+  "reviews_same_role": 163,
+  "linkedin_facts": 839,
+  "revenue": 294,
+  "revenue_growth": 179,
+  "profit": 224,
+  "net_worth": 181,
+  "headcount_growth": 249,
+  "news": 135,
+  "nothing": 31
+ }
+}
