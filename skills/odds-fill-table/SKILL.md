@@ -29,5 +29,17 @@ Work from the `scrape-skills-odds` repo root with the odds repo next to it (see 
    `bun skills/odds-outreach-contacts/scripts/run.ts --link-only`.
 9. `bun coverage.ts` again and report before → after per line.
 
+## Parallel route (faster; use when more than a handful of employers are missing people)
+
+The slow part of finding people is one agent searching one company at a time, not Apify. So split it (measured: 5 agents, about 1 minute each):
+1. `bun skills/odds-fill-table/scripts/assign.ts <dir> --days 7 --agents 5` -> `<dir>/a_assign_1..5.json` (employer-and-department pairs without a
+   hiring manager or peer, employers without a recruiter, jobs without past hires; newest and most-jobs first).
+2. Start one helper agent per list, in the background, with `skills/odds-fill-table/prompts/find-links-agent.md` (fill DIR and N). Helpers only
+   web-search and write `links_*_N.json`; they never call Apify or the database (so credit is not split or burnt in parallel).
+3. When all finish: `bun skills/odds-fill-table/scripts/merge-links.ts <dir>`; it prints how many profiles (and about what cost) will be read.
+4. Read and store with the user's token, spending the credit on outreach first: `read-urls.ts` then `run.ts --from-file` in `odds-outreach-contacts`.
+   Past hires from web search have a low yield (see that skill); spend credit there only after outreach.
+5. `bun coverage.ts --days 7` before and after. Repeat from step 1 for the next gap (assign.ts only lists what is still missing).
+
 Each step works newest jobs first and skips what is already filled, so a run that stops (credit, time) is continued by running the same
 step again. Collected data is never rewritten by a model.

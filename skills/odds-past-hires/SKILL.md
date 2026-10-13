@@ -37,6 +37,13 @@ One search per employer, title words and level: Google `site:linkedin.com/in "<c
 Then run `odds-typesafe-cluster --past-hires`: Jev reads each held role against the posting and corrects exact/adjacent or hides unrelated ones.
 `APIFY UNAVAILABLE` (exit 3) → browser route.
 
+
+## Measured limit of the web-search route (13 Oct 2026)
+
+Web search finds people who work at a company now, rarely the interns who held a role before: 125 profiles read for 50 jobs kept 5 matches
+(outreach kept 61%). For past hires use the Apify Google route below with credit, or the browser route (LinkedIn people search with Past
+company = the employer and the role's title words). `scripts/read-urls.ts links.json profiles.json` + `run.ts --from-file` exist for links found by hand.
+
 ## Browser route (LinkedIn, signed in as the user)
 
 For each job the `--dry` run lists:

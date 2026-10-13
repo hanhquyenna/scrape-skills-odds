@@ -77,6 +77,14 @@ Key tables/views: `postings` (all jobs; `closed_at` marks closed ones), views `a
    that stops (credit, time) is continued by running it again. Use `--dry` first, and `--limit 1` before a large run.
 4. Finish with `bun coverage.ts` again and report before → after per line. Commit and push this repo if you changed it.
 
+## Fastest way to fill people (13 Oct 2026, measured)
+
+Use **the agent's own web search to find LinkedIn links (free, run several helper agents in parallel) and Apify only to read the shortlist**
+(`skills/odds-fill-table/SKILL.md`, "Parallel route"). 7-day jobs with a contact: 33% -> 60%, hiring manager in the department 14% -> 43%,
+peers 17% -> 42%, recruiter 22% -> 33%, for about $2 of Apify. The old Apify-only Google+read route cost ~$0.50 per point. Past hires do not
+work this way (web search finds current staff): 5 matches from 125 profiles; use the Apify Google route or the browser for them.
+Apify limits seen on free accounts vary by token ($5 or $10 a month): read the first line each script prints.
+
 ## Apify: what works on a free account (measured 11 Oct 2026; details in README.md)
 
 - Free plan = $10/month credit. Only pay-per-event/per-result actors run; rental actors need a paid plan.

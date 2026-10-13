@@ -44,6 +44,16 @@ bun skills/odds-outreach-contacts/scripts/run.ts --link-only              # re-l
 Pairs already searched are skipped, so re-running continues where the last run stopped (e.g. when credit ran out).
 `APIFY UNAVAILABLE` (exit 3) → browser route.
 
+## 1b. Fastest and cheapest (measured 12-13 Oct 2026): find with web search, read with Apify
+
+Apify's Google step and its wide profile reads are the slow, costly part (about $0.50 per percentage point, many searches find nobody).
+Finding people with the agent's own free web search (`site:linkedin.com/in <Company> "<title word>" <city>`) and sending only the
+shortlist to Apify gave 61% kept people (~$0.008 per kept person) and moved 7-day coverage from 33% to 60% of jobs with contacts.
+1. Split the work into lists and give each to a helper agent (see `skills/odds-fill-table/SKILL.md`, "Parallel route"): they only write link files.
+2. `bun skills/odds-fill-table/scripts/merge-links.ts <dir>` -> `merged_people.json`.
+3. `APIFY_TOKEN=... bun skills/odds-outreach-contacts/scripts/read-urls.ts <dir>/merged_people.json <dir>/people.json` (reads each profile, ~$0.005).
+4. `bun skills/odds-outreach-contacts/scripts/run.ts --from-file <dir>/people.json`, then `... --link-only`. The fixed rules decide who is kept.
+
 ## Browser route (LinkedIn people search, signed in as the user)
 
 For each pair the `--dry` run lists (employer, department):
