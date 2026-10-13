@@ -38,11 +38,17 @@ Then run `odds-typesafe-cluster --past-hires`: Jev reads each held role against 
 `APIFY UNAVAILABLE` (exit 3) → browser route.
 
 
-## Measured limit of the web-search route (13 Oct 2026)
+## Best route for past hires (measured 13 Oct 2026): LinkedIn people search in the signed-in built-in browser, then Apify verifies
 
-Web search finds people who work at a company now, rarely the interns who held a role before: 125 profiles read for 50 jobs kept 5 matches
-(outreach kept 61%). For past hires use the Apify Google route below with credit, or the browser route (LinkedIn people search with Past
-company = the employer and the role's title words). `scripts/read-urls.ts links.json profiles.json` + `run.ts --from-file` exist for links found by hand.
+Web search (Google) finds current staff, not the interns who held a role: 5 matches from 125 profiles. LinkedIn's own people search, signed in as the user,
+shows exactly them ("Finance Intern at Philips", "AI Intern @ ASML"). Measured: 50% of the profiles read were kept (27 of 50, 10 of 20) and 7-day
+past hires (exact or adjacent) went 28.7% -> 36.1% for about $0.4.
+1. For a job without past hires: open `https://www.linkedin.com/search/results/people/?keywords=<employer> <role words> intern` (one job at a time).
+2. Read the cards with JavaScript (cards are `main [role="listitem"]`; take the first `a[href*="/in/"]` per card; keep cards whose text names the employer).
+3. Write `[{ "jobId": "<postings id>", "urls": ["https://www.linkedin.com/in/<slug>/", ...] }]` (up to ~8 per job; skip URLs with `%` in them).
+4. `APIFY_TOKEN=... bun skills/odds-past-hires/scripts/read-urls.ts links.json profiles.json` then `bun skills/odds-past-hires/scripts/run.ts --from-file profiles.json`.
+   The fixed rules decide exact / adjacent. If the shared-account reader says "no available accounts found", `lib/people.ts` falls back to
+   harvestapi/linkedin-profile-scraper in chunks of 10 (free accounts: at most 10 items per run).
 
 ## Browser route (LinkedIn, signed in as the user)
 
