@@ -41,6 +41,14 @@ Exact-role past hires when nobody held that role (new or odd roles), people at e
 companies that publish nothing. The app already shows LinkedIn search links when a group has nobody. Realistic ceilings (7 days): any contact 80-85%, hiring manager
 65-70%, recruiter ~55%, past hires exact-or-adjacent ~55%, reviews ~90%.
 
+## Changes made by other sessions that you must know (15 Oct 2026)
+- **`hiring_manager` is now a verified label.** The odds migration `20261015064739_outreach_relationship_evidence.sql` renames every title-only manager to
+  `department_manager` (a trigger does it on insert; `job_outreach_contacts` has a check that `hiring_manager` needs an evidence URL and a quote). Our rules find
+  managers by title, so they write `department_manager`; the report shows both rows ("department manager by title", "hiring manager verified with evidence").
+- **Stale jobs**: the hourly in-database checker covers company sites and ATS boards, not LinkedIn / Glassdoor / Indeed jobs. 981 of 1,486 open jobs in the table
+  had not been checked for 2+ days, 108 never. Use `odds-verify-live-jobs` (Apify `scrapingmonkey/linkedin-job-details-scraper`, or `--free` public pages).
+- Tokens expire: the Supabase `sbp_` token in the odds `.env.secrets` and the pasted Apify tokens returned 401 two days later. Ask the owner for a new one.
+
 ## Rules from the owner (unchanged)
 Collect as published; fixed rules decide; TypeSafe (Jev) only classifies; no model writes or rewrites text people read; no moral or platform limits that were not stated;
 never write API tokens to files or repeat them back (pass them as `APIFY_TOKEN=...` for one command and ask the owner to rotate pasted tokens).

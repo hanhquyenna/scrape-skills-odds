@@ -24,7 +24,7 @@ for (const [name, urls] of Object.entries(links)) {
   const deps = [...new Set(rows.map((r) => departmentKey(r.family, r.title)).filter(Boolean))] as string[]
   const add = (role: string, department: string | null) => out.push({ employer, display: name, role, department, urls })
   for (const d of deps.length ? deps : [null]) {
-    add("hiring_manager", d); add("peer", d)
+    add("department_manager", d); add("peer", d)
     const adj = adjacentDepartments(d)[0]
     if (adj) { add("adjacent_manager", adj); add("adjacent_peer", adj) }
   }

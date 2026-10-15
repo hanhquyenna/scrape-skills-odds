@@ -27,8 +27,8 @@ const DRY = flag("--dry"), LINK_ONLY = flag("--link-only")
 const FILE = arg("--from-file", "")
 const DAYS = Number(arg("--days", "30")), LIMIT = Number(arg("--limit", "100000"))
 
-type Role = "hiring_manager" | "peer" | "adjacent_manager" | "adjacent_peer" | "recruiter"
-const RANK: Record<Role, number> = { hiring_manager: 1, peer: 2, adjacent_manager: 3, adjacent_peer: 4, recruiter: 5 }
+type Role = "department_manager" | "hiring_manager" | "peer" | "adjacent_manager" | "adjacent_peer" | "recruiter"
+const RANK: Record<Role, number> = { hiring_manager: 1, department_manager: 1, peer: 2, adjacent_manager: 3, adjacent_peer: 4, recruiter: 5 }
 interface Person { url: string; name: string; title: string; headline: string; company: string; companyUrl: string; place: string; photo: string; since: string }
 
 function fits(p: Person, role: Role): string | null {
@@ -74,7 +74,7 @@ if (!LINK_ONLY) {
       const key = `${j.employer}\u0000${family}`
       if (seen.has(key)) continue
       seen.add(key)
-      pairs.push({ employer: j.employer, display: j.display, family, newest: j.day, has_mgr: has(j.employer, ["hiring_manager", "adjacent_manager"], family), has_peer: has(j.employer, ["peer", "adjacent_peer"], family), has_rec: has(j.employer, ["recruiter"], null) })
+      pairs.push({ employer: j.employer, display: j.display, family, newest: j.day, has_mgr: has(j.employer, ["hiring_manager", "department_manager", "adjacent_manager"], family), has_peer: has(j.employer, ["peer", "adjacent_peer"], family), has_rec: has(j.employer, ["recruiter"], null) })
     }
     const todo = pairs.filter((p) => !(p.has_mgr && p.has_peer && p.has_rec)).slice(0, LIMIT)
     console.log(`${pairs.length} employer-and-department pairs, ${todo.length} to search (newest jobs first)`)
@@ -118,7 +118,7 @@ if (!LINK_ONLY) {
         const first: Array<{ pair: (typeof todo)[0]; page: string; role: Role; dep: string | null }> = []
         for (const { pair, page } of batch) {
           if (!page) continue
-          if (pair.family && !pair.has_mgr) first.push({ pair, page, role: "hiring_manager", dep: pair.family })
+          if (pair.family && !pair.has_mgr) first.push({ pair, page, role: "department_manager", dep: pair.family })
           if (pair.family && !pair.has_peer) first.push({ pair, page, role: "peer", dep: pair.family })
           if (!pair.has_rec && !recruitersDone.has(pair.employer)) { recruitersDone.add(pair.employer); first.push({ pair, page, role: "recruiter", dep: null }) }
         }
@@ -129,7 +129,7 @@ if (!LINK_ONLY) {
           await store(w.pair.employer, w.role, w.dep, kept)
           console.log(`- ${w.pair.newest} ${w.pair.display} / ${w.dep ?? "-"} ${w.role}: ${kept.length}`)
           const adj = adjacentDepartments(w.dep)[0]
-          if (kept.length === 0 && adj && (w.role === "hiring_manager" || w.role === "peer")) second.push({ ...w, role: w.role === "hiring_manager" ? "adjacent_manager" : "adjacent_peer", dep: adj })
+          if (kept.length === 0 && adj && (w.role === "department_manager" || w.role === "hiring_manager" || w.role === "peer")) second.push({ ...w, role: w.role === "department_manager" || w.role === "hiring_manager" ? "adjacent_manager" : "adjacent_peer", dep: adj })
         }
         if (second.length) {
           const got2 = await runRound(second)
@@ -163,8 +163,8 @@ const out = await sql<{ n: number; jobs: number }>(`
   )
   insert into job_outreach_contacts (posting_id, employer, profile_url, role, department, rank)
   select distinct on (l.posting_id, l.profile_url) l.posting_id, l.employer, l.profile_url, l.role, l.department,
-    case l.role when 'hiring_manager' then 1 when 'peer' then 2 when 'adjacent_manager' then 3 when 'adjacent_peer' then 4 when 'recruiter' then 5 else 6 end
-      + case when l.department is not null and l.department is distinct from (select family from jobs where id = l.posting_id) and l.role in ('hiring_manager','peer') then 2 else 0 end
+    case l.role when 'hiring_manager' then 1 when 'department_manager' then 1 when 'peer' then 2 when 'adjacent_manager' then 3 when 'adjacent_peer' then 4 when 'recruiter' then 5 else 6 end
+      + case when l.department is not null and l.department is distinct from (select family from jobs where id = l.posting_id) and l.role in ('hiring_manager','department_manager','peer') then 2 else 0 end
   from links l where l.role is not null
   order by l.posting_id, l.profile_url, 6
   on conflict (posting_id, profile_url) do update set role = excluded.role, department = excluded.department, rank = excluded.rank

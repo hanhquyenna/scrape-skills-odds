@@ -18,12 +18,13 @@ pool as (select b.*, array[b.e1, b.e2] || coalesce((select array_agg(distinct al
 people as (
   select lower(employer) emp, coalesce(jev->>'role', '') role,
     jev->>'role' = 'recruiter' or (jev->>'role' is null and headline ~* '(recruit|talent acquisition|\\mhr\\M|human resources|people partner|early careers|campus)') is_recruiter,
-    jev->>'role' in ('hiring_manager','adjacent_manager') or (jev->>'role' is null and headline ~* '(\\mmanager\\M|\\mhead\\M|\\mlead\\M|director)' and not headline ~* '(recruit|talent|\\mhr\\M)') is_manager
+    jev->>'role' in ('hiring_manager','department_manager','adjacent_manager') or (jev->>'role' is null and headline ~* '(\\mmanager\\M|\\mhead\\M|\\mlead\\M|director)' and not headline ~* '(recruit|talent|\\mhr\\M)') is_manager
   from job_people where coalesce(jev->>'decision_final', '') <> 'reject'),
 h as (
   select p.id,
     exists (select 1 from people j where j.emp = any(p.names)) contacts,
-    exists (select 1 from people j where j.emp = any(p.names) and j.role = 'hiring_manager') hiring_manager_dept,
+    exists (select 1 from people j where j.emp = any(p.names) and j.role in ('hiring_manager','department_manager')) hiring_manager_dept,
+    exists (select 1 from people j where j.emp = any(p.names) and j.role = 'hiring_manager') hiring_manager_verified,
     exists (select 1 from people j where j.emp = any(p.names) and j.is_manager) any_manager,
     exists (select 1 from people j where j.emp = any(p.names) and j.role in ('peer','adjacent_peer')) peers,
     exists (select 1 from people j where j.emp = any(p.names) and j.is_recruiter) recruiter,
@@ -40,7 +41,7 @@ h as (
     exists (select 1 from employer_news n where lower(n.employer) = any(p.names)) news
   from pool p)
 select count(*) jobs,
-  count(*) filter (where contacts) contacts, count(*) filter (where hiring_manager_dept) hiring_manager_in_dept, count(*) filter (where any_manager) any_manager,
+  count(*) filter (where contacts) contacts, count(*) filter (where hiring_manager_dept) hiring_manager_in_dept, count(*) filter (where hiring_manager_verified) hiring_manager_verified, count(*) filter (where any_manager) any_manager,
   count(*) filter (where peers) peers_not_senior, count(*) filter (where recruiter) recruiter,
   count(*) filter (where past_exact) past_hires_exact, count(*) filter (where past_any) past_hires_exact_or_adjacent,
   count(*) filter (where reviews) reviews_employer, count(*) filter (where reviews_role) reviews_same_role,

@@ -17,6 +17,7 @@ rewrites anything people read.
 | Skill | Fills | Apify actor (free credits) | Without Apify |
 |---|---|---|---|
 | [odds-playbook](skills/odds-playbook/SKILL.md) | the optimized end-to-end process (order, costs, limits) | - | - |
+| [odds-verify-live-jobs](skills/odds-verify-live-jobs/SKILL.md) | which open jobs are still live (marks closed) | `scrapingmonkey/linkedin-job-details-scraper` | LinkedIn public pages (`--free`) |
 | [odds-metrics-report](skills/odds-metrics-report/SKILL.md) | the metrics report, 7 and 30 days, change vs start / last snapshot | - | - |
 | [odds-fill-table](skills/odds-fill-table/SKILL.md) | everything, in order; parallel helper agents | - | - |
 | [odds-linkedin-new-jobs](skills/odds-linkedin-new-jobs/SKILL.md) | new jobs (postings) | `valig/linkedin-jobs-scraper` | odds' public-page reader, or browser |

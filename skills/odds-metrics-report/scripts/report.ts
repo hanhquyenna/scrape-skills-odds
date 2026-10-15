@@ -10,7 +10,7 @@ import { flag } from "../../../lib/env"
 
 const ROOT = new URL("../../../", import.meta.url).pathname
 const KEYS: Array<[string, string]> = [
-  ["contacts", "Outreach: any contact"], ["hiring_manager_in_dept", "Outreach: hiring manager in the job's department"],
+  ["contacts", "Outreach: any contact"], ["hiring_manager_in_dept", "Outreach: department manager (by title) in the job's department"], ["hiring_manager_verified", "Outreach: hiring manager verified with evidence"],
   ["peers_not_senior", "Outreach: same-department people, not senior"], ["recruiter", "Outreach: recruiter"],
   ["past_hires_exact", "Past hires: exact role"], ["past_hires_exact_or_adjacent", "Past hires: exact or adjacent role"],
   ["reviews_employer", "Company reviews"], ["reviews_same_role", "Reviews from the same role"],

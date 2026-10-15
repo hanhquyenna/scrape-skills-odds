@@ -7,6 +7,7 @@ description: The optimized end-to-end process for filling odds' job table (activ
 
 Read `LEARNINGS.md` (limits, costs, results) and `AGENTS.md` (where things are) first. Then:
 
+0a. **Are the jobs live?** `bun skills/odds-verify-live-jobs/scripts/run.ts --days 30 --dry`; if many are stale, run it (`--free` without Apify). Fill data for live jobs only.
 0. `bun skills/odds-metrics-report/scripts/report.ts --no-save`: tell the user where things stand (7 and 30 days). Ask for an Apify token (never store it).
 1. **New employers need a LinkedIn page**: `skills/odds-company-info/scripts/linkedin-company.ts --days 7 --limit 150` (cheap). New jobs first if wanted: `odds-linkedin-new-jobs` + `odds-glassdoor-jobs`, then `sh scripts/after-new-jobs.sh` (odds repo).
 2. **People, in parallel** (`skills/odds-fill-table/SKILL.md` "Parallel route"): `assign.ts` -> 5 helper agents (<= 30 web searches each; 200 per turn in total) -> `merge-links.ts` ->

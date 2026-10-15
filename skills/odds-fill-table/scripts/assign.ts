@@ -14,7 +14,7 @@ if (!dir) throw new Error("usage: assign.ts <dir> [--days 7] [--agents 5] [--pre
 mkdirSync(dir, { recursive: true })
 const DAYS = Number(arg("--days", "7")), N = Number(arg("--agents", "5")), PREFIX = arg("--prefix", "a")
 const has = (role: string, byDept: boolean): string =>
-  `exists (select 1 from job_people j where lower(j.employer) in (lower(trim(p.employer)), lower(trim(p.d))) and j.jev->>'role' = '${role}' ${byDept ? "and j.jev->>'department' = p.family" : ""} and coalesce(j.jev->>'decision_final','') <> 'reject')`
+  `exists (select 1 from job_people j where lower(j.employer) in (lower(trim(p.employer)), lower(trim(p.d))) and j.jev->>'role' in (${role === "hiring_manager" ? "'hiring_manager','department_manager'" : `'${role}'`}) ${byDept ? "and j.jev->>'department' = p.family" : ""} and coalesce(j.jev->>'decision_final','') <> 'reject')`
 const pairs = (await sql(`with p0 as (select employer, coalesce(employer_display, employer) d, family from app_jobs where ${scopeWhere(DAYS)})
   select employer, d as display, family as department, count(*) jobs from p0 p where family is not null and (not ${has("hiring_manager", true)} or not ${has("peer", true)}) group by 1,2,3 order by jobs desc limit 120`))
 const recruiters = (await sql(`with p0 as (select employer, coalesce(employer_display, employer) d, family from app_jobs where ${scopeWhere(DAYS)})

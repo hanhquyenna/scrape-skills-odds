@@ -61,6 +61,7 @@ Key tables/views: `postings` (all jobs; `closed_at` marks closed ones), views `a
 | Skill | Fills |
 |---|---|
 | `skills/odds-playbook` | **the optimized end-to-end process: what to run in which order, with costs and limits** |
+| `skills/odds-verify-live-jobs` | **are the open jobs still live? marks closed ones (LinkedIn jobs the hourly checker misses); `--free` needs no Apify** |
 | `skills/odds-metrics-report` | **the metrics: % of jobs with each kind of data, 7 and 30 days, change vs start and vs the last report (`reports/` snapshots)** |
 | `skills/odds-fill-table` | runs all the others in order; the "Parallel route" with helper agents (assign / merge / prompt) |
 | `skills/odds-linkedin-new-jobs`, `skills/odds-glassdoor-jobs` | new jobs |
